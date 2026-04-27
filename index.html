@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCA SAVINGS TRADING PRO</title>
+    <style>
+        body {
+            font-family: system-ui, SF Pro, sans-serif;
+            background-color: #000;
+            color: #FFD700;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: #111;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        .bottom-nav a {
+            color: #FFD700;
+            text-decoration: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Home Dashboard</h2>
+        <div id="portfolio-value">มูลค่าพอร์ตรวม: THB 0 / USD 0</div>
+        <div id="btc-price">BTC ราคาปัจจุบัน: THB 0</div>
+        <div id="pnl">กำไร/ขาดทุน % วันนี้: 0%</div>
+        <canvas id="btc-chart"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>DCA Input Form</h2>
+        <input type="date" id="purchase-date">
+        <input type="number" id="dca-amount" placeholder="จำนวนเงิน DCA (THB)">
+        <input type="number" id="btc-price-input" placeholder="ราคา BTC ที่ซื้อ">
+        <button onclick="saveDCA()">บันทึก → Google Sheets</button>
+    </div>
+
+    <div class="card">
+        <h2>Portfolio</h2>
+        <table id="portfolio-table">
+            <thead>
+                <tr>
+                    <th>วันที่</th>
+                    <th>จำนวนเงิน (THB)</th>
+                    <th>ราคา BTC (THB)</th>
+                    <th>จำนวน BTC</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>AI Signal</h2>
+        <div id="ai-signal">Signal: 🟢 BUY</div>
+        <button onclick="analyzeSignal()">วิเคราะห์ใหม่</button>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <a href="#home">Home</a>
+    <a href="#portfolio">Portfolio</a>
+    <a href="#dca">DCA</a>
+    <a href="#signal">Signal</a>
+    <a href="#settings">Settings</a>
+</div>
+
+<script>
+    // Function to fetch and display data
+    async function fetchData() {
+        const response = await fetch('YOUR_WEB_APP_URL'); // Replace with your Web App URL
+        const data = await response.json();
+        // Update UI with fetched data
+        // ...
+    }
+
+    async function saveDCA() {
+        const date = document.getElementById('purchase-date').value;
+        const amount = document.getElementById('dca-amount').value;
+        const price = document.getElementById('btc-price-input').value;
+        const btcAmount = amount / price;
+
+        const postData = {
+            date: date,
+            amount_thb: amount,
+            btc_price_thb: price,
+            btc_amount: btcAmount,
+            note: ''
+        };
+
+        await fetch('YOUR_WEB_APP_URL', { // Replace with your Web App URL
+            method: 'POST',
+            body: JSON.stringify(postData),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        fetchData(); // Refresh data after saving
+    }
+
+    async function analyzeSignal() {
+        // Call the Claude API and update the AI signal
+        // ...
+    }
+
+    // Initial fetch
+    async function fetchData() {
+    const response = await fetch('YOUR_WEB_APP_URL'); // Replace with your Web App URL
+    const data = await response.json();
+
+    // Update UI with fetched data
+    const portfolioValue = calculatePortfolioValue(data);
+    document.getElementById('portfolio-value').innerText = `มูลค่าพอร์ตรวม: THB ${portfolioValue.totalTHB} / USD ${portfolioValue.totalUSD}`;
+    document.getElementById('btc-price').innerText = `BTC ราคาปัจจุบัน: THB ${data[data.length - 1].btc_price_thb}`;
+    document.getElementById('pnl').innerText = `กำไร/ขาดทุน % วันนี้: ${calculatePNL(data)}%`;
+
+    // Populate portfolio table
+    const tbody = document.querySelector('#portfolio-table tbody');
+    tbody.innerHTML = ''; // Clear existing rows
+    data.forEach(record => {
+        const row = `<tr>
+            <td>${record.date}</td>
+            <td>${record.amount_thb}</td>
+            <td>${record.btc_price_thb}</td>
+            <td>${record.btc_amount}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+    });
+}
+
+// Helper function to calculate portfolio value
+function calculatePortfolioValue(data) {
+    let totalTHB = 0;
+    let totalUSD = 0; // Assume you will calculate USD value based on the exchange rate
+    data.forEach(record => {
+        totalTHB += record.amount_thb; // Adjust according to your logic
+        // totalUSD += ...; // Calculate USD value
+    });
+    return { totalTHB, totalUSD };
+}
+
+// Helper function to calculate P&L
+function calculatePNL(data) {
+    // Implement your P&L calculation logic here
+    return 0; // Placeholder
+}
+async function fetchBTCPrice() {
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=thb,usd');
+    const data = await response.json();
+    const btcPriceTHB = data.bitcoin.thb;
+    const btcPriceUSD = data.bitcoin.usd;
+
+    // Update the UI with the latest BTC price
+    document.getElementById('btc-price').innerText = `BTC ราคาปัจจุบัน: THB ${btcPriceTHB}`;
+    
+    // Update the portfolio value in USD as well if needed
+    // You can use btcPriceUSD for calculations
+}
+
+// Call fetchBTCPrice every 60 seconds
+setInterval(fetchBTCPrice, 60000);
+async function fetchBTCPrice() {
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=thb,usd');
+    const data = await response.json();
+    const btcPriceTHB = data.bitcoin.thb;
+    const btcPriceUSD = data.bitcoin.usd;
+
+    // Update the UI with the latest BTC price
+    document.getElementById('btc-price').innerText = `BTC ราคาปัจจุบัน: THB ${btcPriceTHB}`;
+    
+    // Update the portfolio value in USD as well if needed
+    // You can use btcPriceUSD for calculations
+}
+
+// Call fetchBTCPrice every 60 seconds
+setInterval(fetchBTCPrice, 60000);
+fetchBTCPrice(); // Initial call to fetch the price immediately
+async function analyzeSignal() {
+    const btcPrice = document.getElementById('btc-price').innerText.split(' ')[3]; // Extract current BTC price
+    const totalRecords = await fetch('YOUR_WEB_APP_URL'); // Fetch all records from your Web App
+    const records = await totalRecords.json();
+
+    const avgCost = calculateAverageCost(records);
+    const totalBTC = records.reduce((sum, record) => sum + record.btc_amount, 0);
+    const pnlPercent = calculatePNL(records); // Implement P&L calculation logic
+    const monthlyTarget = await getMonthlyTarget(); // Fetch monthly target from SETTINGS sheet
+
+    const prompt = {
+        system: "You are a DCA Bitcoin trading advisor. Analyze the given market data and portfolio context. Respond ONLY in JSON format.",
+        user: `BTC ราคาปัจจุบัน: ${btcPrice} THB
+                ต้นทุนเฉลี่ย DCA ของฉัน: ${avgCost} THB
+                กำไร/ขาดทุนปัจจุบัน: ${pnlPercent}%
+                เป้าหมาย DCA รายเดือน: ${monthlyTarget} THB`
+    };
+
+    const response = await fetch('YOUR_CLAUDE_API_URL', { // Replace with your Claude API URL
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer YOUR_API_KEY' // Replace with your API key if needed
+        },
+        body: JSON.stringify(prompt)
+    });
+
+    const result = await response.json();
+    displaySignal(result);
+    saveSignalToSheet(result); // Save the signal to Google Sheets
+}
+
+function displaySignal(signal) {
+    document.getElementById('ai-signal').innerText = `Signal: ${signal.signal} (Confidence: ${signal.confidence}%) - ${signal.reason}`;
+}
+
+async function saveSignalToSheet(signal) {
+    const postData = {
+        signal: signal.signal,
+        confidence: signal.confidence,
+        reason: signal.reason
+    };
+
+    await fetch('YOUR_WEB_APP_URL', { // Replace with your Web App URL
+        method: 'POST',
+        body: JSON.stringify(postData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+}
+
+// Helper function to calculate average cost
+function calculateAverageCost(records) {
+    const totalInvestment = records.reduce((sum, record) => sum + record.amount_thb, 0);
+    const totalBTC = records.reduce((sum, record) => sum + record.btc_amount, 0);
+    return totalBTC ? (totalInvestment / totalBTC) : 0;
+}
+
+// Helper function to get monthly target from SETTINGS
+async function getMonthlyTarget() {
+    const response = await fetch('YOUR_WEB_APP_URL'); // Fetch from your SETTINGS sheet
+    const settings = await response.json();
+    const target = settings.find(setting => setting.key === 'monthly_target');
+    return target ? target.value : 0;
+}
+
+;
+</script>
+
+</body>
+</html>
